@@ -510,7 +510,7 @@ Multiprocessing supports two types of communication channel between processes:
 		    print parent_conn.recv()   # prints "[42, None, 'hello']"
 		    p.join()
 
-.. seealso:: For more documentation `visit here <https://docs.python.org/2/library/multiprocessing.html>`_
+For more documentation `visit here <https://docs.python.org/2/library/multiprocessing.html>`_
 
 .. _`PyPy`: http://pypy.org
 .. _`The GIL`: http://wiki.python.org/moin/GlobalInterpreterLock
