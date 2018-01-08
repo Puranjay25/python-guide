@@ -3,6 +3,7 @@ Speed
 
 .. image:: https://farm3.staticflickr.com/2826/33175625804_e225b90f3e_k_d.jpg
 
+
 CPython, the most commonly used implementation of Python, is slow for CPU bound
 tasks. `PyPy`_ is fast.
 
@@ -438,6 +439,78 @@ Spawning Processes
 Multiprocessing
 ---------------
 
+*Multiprocessing* is a package that supports spawning processes using an API similar to the threading module. The multiprocessing package offers both local and remote concurrency, effectively side-stepping the Global Interpreter Lock by using subprocesses instead of threads. Due to this, the multiprocessing module allows the programmer to fully leverage multiple processors on a given machine. It runs on both Unix and Windows.
+
+The multiprocessing module also introduces APIs which do not have analogs in the threading module. A prime example of this is the Pool object which offers a convenient means of parallelizing the execution of a function across multiple input values, distributing the input data across processes (data parallelism). The following example demonstrates the common practice of defining such functions in a module so that child processes can successfully import that module. 
+
+This basic example of data parallelism using Pool::
+
+	from multiprocessing import Pool
+
+	def f(x):
+    	return x*x
+
+	if __name__ == '__main__':
+    	p = Pool(5)
+    	print(p.map(f, [1, 2, 3]))
+
+will print to standard output::
+
+	[1,4,9]
+
+**The Process Class**
+
+
+In multiprocessing, processes are spawned by creating a Process object and then calling its start() method. Process follows the API of threading.Thread. A trivial example of a multiprocess program is::
+
+	from multiprocessing import Process
+	
+	def f(name):
+		print 'hello', name
+	
+	if __name__=='main':
+		p=Process(target=f,args=('bob',))
+		p.start()
+		p.join()
+
+**Exchanging objects between processes**
+
+Multiprocessing supports two types of communication channel between processes:
+
+1) Queues
+	
+	The **Queue** class is a near clone of Queue.Queue.For Example::
+
+		from multiprocessing import Process, Queue
+
+		def f(q):
+		    q.put([42, None, 'hello'])
+
+		if __name__ == '__main__':
+		    q = Queue()
+		    p = Process(target=f, args=(q,))
+		    p.start()
+		    print q.get()    # prints "[42, None, 'hello']"
+		    p.join()
+
+#) Pipes
+
+	The **Pipe()** function returns a pair of connection objects connected by a pipe which by default is duplex(two-way).For example::
+
+		from multiprocessing import Process, Pipe
+
+		def f(conn):
+		    conn.send([42, None, 'hello'])
+		    conn.close()
+
+		if __name__ == '__main__':
+		    parent_conn, child_conn = Pipe()
+		    p = Process(target=f, args=(child_conn,))
+		    p.start()
+		    print parent_conn.recv()   # prints "[42, None, 'hello']"
+		    p.join()
+
+.. seealso:: For more documentation `visit here <https://docs.python.org/2/library/multiprocessing.html>`_
 
 .. _`PyPy`: http://pypy.org
 .. _`The GIL`: http://wiki.python.org/moin/GlobalInterpreterLock
@@ -451,3 +524,78 @@ Multiprocessing
 .. _`stackoverflow post`: http://stackoverflow.com/questions/26688424/python-threads-are-printing-at-the-same-time-messing-up-the-text-output
 .. _`data race`: https://en.wikipedia.org/wiki/Race_condition
 .. _`Lock`: https://docs.python.org/3/library/threading.html#lock-objects
+
+Numba
+:::::
+
+Numba gives you the power to speed up your applications with high performance functions written directly in Python. With a few annotations, array-oriented and math-heavy Python code can be just-in-time compiled to native machine instructions, similar in performance to C, C++ and Fortran, without having to switch languages or Python interpreters.
+
+Numba works by generating optimized machine code using the LLVM compiler infrastructure at import time, runtime, or statically (using the included pycc tool). Numba supports compilation of Python to run on either CPU or GPU hardware, and is designed to integrate with the Python scientific software stack.
+
+**Compatibility**
+
+Numba is compatible with **Python 2.7 and 3.4** or later, and Numpy versions **1.7 to 1.13**
+
+Our supported platforms are:
+
+1) Linux x86(32-bit ad 64-bit)
+#) Windows 7 and later(32-bit and 64-bit)
+#) OS X 10.9 and later(64-bit)
+#) NVIDIA GPUs of compute capability 2.0 and later
+#) AMD APUs supported by the HSA 1.0 final runtime (Kaveri,Carrizo)
+
+**Example**::
+	
+	#!/usr/bin/env python
+	"""
+	A moving average function using @guvectorize
+	"""
+
+	import numpy as np
+	from numba import guvectorize
+	
+	@guvectorize(['void(float64[:], intp[:], float64[:])'], '(n),()->(n)')
+	def move_mean(a, window_arr, out):
+	    window_width = window_arr[0]
+	    asum = 0.0
+	    count = 0
+	    for i in range(window_width):
+		asum += a[i]
+		count += 1
+		out[i] = asum / count
+	    for i in range(window_width, len(a)):
+		asum += a[i] - a[i - window_width]
+		out[i] = asum / count
+
+	arr = np.arange(20, dtype=np.float64).reshape(2, 10)
+	print(arr)
+	print(move_mean(arr, 3))
+
+**Download**
+
+Download your compatible version of *Numba* from `Here <https://numba.pydata.org/download.html>`_
+	
+.. seealso:: `View on github <https://github.com/numba/numba>`_
+
+**Instaling**
+
+The easiest way to install numba and get updates is by using the `Anaconda Distribution <https://www.anaconda.com/download/#linux>`_
+
+If you have anaconda installed already::
+
+	$ conda install numba
+
+.. seealso:: For it's complete documentation `Click Here <http://numba.pydata.org/numba-doc/dev/index.html>`_
+
+or::
+
+	$ conda update numba
+
+.. note:: For custom python environments see `this <https://github.com/numba/numba#custom-python-environments>`_
+
+   
+
+
+
+
+
